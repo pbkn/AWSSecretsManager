@@ -5,6 +5,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.system.SystemProperties;
 
 import com.example.awssecretsmanager.service.ETLServiceImpl;
 
@@ -19,8 +20,13 @@ public class AwsSecretsManagerApplication implements ApplicationRunner {
 	}
 
 	@Override
-	public void run(ApplicationArguments args) throws Exception {
-		etlServiceImpl.executeETL();
+	public void run(ApplicationArguments args) {
+		try {
+			etlServiceImpl.executeETL(SystemProperties.get("PipelineNumber"));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

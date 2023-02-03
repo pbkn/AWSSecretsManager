@@ -3,6 +3,7 @@ package com.example.awssecretsmanager.service;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,11 +40,24 @@ public class ETLServiceImpl {
 	@Autowired
 	S3TransferManager s3TransferManager;
 
-	String sqlQuery = "SELECT * FROM poc";
+	public void executeETL(String pipelineNumber)
+			throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
 
-	String bucketPath = "poc.";
+		switch (pipelineNumber) {
+			case "DataPipeline1" -> processPipeline1();
+			case "DataPipeline2" -> processPipeline1();
 
-	public void executeETL() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
+			default -> throw new IllegalArgumentException("Unexpected value for pipelineNumber:" + pipelineNumber);
+		}
+	}
+
+	private void processPipeline1() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
+		String bucketPath = "poc.rs1/pending";
+
+		String rs1Path = "./data/rs1/resultView1.csv";
+
+		String sqlQuery = "SELECT * FROM poc";
+
 		log.info("DB Connection is established with {}", jdbcTemplate.toString());
 
 		jdbcTemplate.setFetchSize(10);
@@ -58,7 +72,7 @@ public class ETLServiceImpl {
 			}
 		});
 
-		try (FileWriter writer = new FileWriter("./data/rs1/resultView1.csv")) {
+		try (FileWriter writer = new FileWriter(rs1Path)) {
 			ColumnPositionMappingStrategy<ResultView1> mappingStrategy = new ColumnPositionMappingStrategy<>();
 			mappingStrategy.setType(ResultView1.class);
 
@@ -73,8 +87,9 @@ public class ETLServiceImpl {
 			beanWriter.write(resultList);
 		}
 
-		uploadFile(s3TransferManager, bucketPath, "resultView1", "./data/rs1/resultView1.csv");
+		uploadFile(s3TransferManager, bucketPath, "rs1", rs1Path);
 
+		Files.delete(Paths.get(rs1Path));
 	}
 
 	public String uploadFile(S3TransferManager transferManager, String bucketName, String key, String filePath) {

@@ -5,6 +5,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.boot.system.SystemProperties;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +36,8 @@ public class LoggingAspect {
 			methodParamsBuilder.append(params);
 		}
 		// Log method
-		log.info("Execution of " + className + "." + methodName + " :: " + methodParamsBuilder.toString() + ":::"
-				+ result);
+		log.info(SystemProperties.get("PipelineNumber") + "_Execution of " + className + "." + methodName + " :: "
+				+ methodParamsBuilder.toString() + ":::" + result);
 
 		return result;
 	}
