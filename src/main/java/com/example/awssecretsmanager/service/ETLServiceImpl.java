@@ -1,9 +1,13 @@
 package com.example.awssecretsmanager.service;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +16,11 @@ import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Service;
 
 import com.example.awssecretsmanager.dto.ResultView1;
+import com.opencsv.bean.ColumnPositionMappingStrategy;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
@@ -32,7 +41,9 @@ public class ETLServiceImpl {
 
 	String sqlQuery = "SELECT * FROM poc";
 
-	public void executeETL() {
+	String bucketPath = "poc.";
+
+	public void executeETL() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
 		log.info("DB Connection is established with {}", jdbcTemplate.toString());
 
 		jdbcTemplate.setFetchSize(10);
@@ -46,6 +57,23 @@ public class ETLServiceImpl {
 				}
 			}
 		});
+
+		try (FileWriter writer = new FileWriter("temp/data/resultview1.csv")) {
+			ColumnPositionMappingStrategy<ResultView1> mappingStrategy = new ColumnPositionMappingStrategy<>();
+			mappingStrategy.setType(ResultView1.class);
+
+			Field[] fields = ResultView1.class.getDeclaredFields();
+			String[] columns = Arrays.stream(fields).map(Field::toString).toArray(String[]::new);
+
+			mappingStrategy.setColumnMapping(columns);
+
+			StatefulBeanToCsv<ResultView1> beanWriter = new StatefulBeanToCsvBuilder<ResultView1>(writer)
+					.withMappingStrategy(mappingStrategy).build();
+
+			beanWriter.write(resultList);
+		}
+
+		uploadFile(s3TransferManager, bucketPath, "resultView1", "temp/data/resultview1.csv");
 
 	}
 
