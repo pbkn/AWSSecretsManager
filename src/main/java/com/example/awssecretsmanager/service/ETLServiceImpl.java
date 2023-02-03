@@ -52,13 +52,13 @@ public class ETLServiceImpl {
 		jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
 			public void processRow(ResultSet resultSet) throws SQLException {
 				while (resultSet.next()) {
-					resultList.add(ResultView1.builder().col1(resultSet.getString("col1"))
+					resultList.add(ResultView1.builder().id(Long.valueOf(1)).col1(resultSet.getString("col1"))
 							.col2(resultSet.getString("col2")).col3(resultSet.getString("col3")).build());
 				}
 			}
 		});
 
-		try (FileWriter writer = new FileWriter("temp/data/resultview1.csv")) {
+		try (FileWriter writer = new FileWriter("./data/rs1/resultView1.csv")) {
 			ColumnPositionMappingStrategy<ResultView1> mappingStrategy = new ColumnPositionMappingStrategy<>();
 			mappingStrategy.setType(ResultView1.class);
 
@@ -73,7 +73,7 @@ public class ETLServiceImpl {
 			beanWriter.write(resultList);
 		}
 
-		uploadFile(s3TransferManager, bucketPath, "resultView1", "temp/data/resultview1.csv");
+		uploadFile(s3TransferManager, bucketPath, "resultView1", "./data/rs1/resultView1.csv");
 
 	}
 
