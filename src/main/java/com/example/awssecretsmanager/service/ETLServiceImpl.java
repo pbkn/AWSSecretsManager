@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Service;
 
 import com.example.awssecretsmanager.dto.ResultView1;
+import com.example.awssecretsmanager.util.AwsS3Util;
 import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
@@ -25,10 +26,6 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
-import software.amazon.awssdk.transfer.s3.model.CompletedFileUpload;
-import software.amazon.awssdk.transfer.s3.model.FileUpload;
-import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
-import software.amazon.awssdk.transfer.s3.progress.LoggingTransferListener;
 
 @Service
 @Slf4j
@@ -87,20 +84,9 @@ public class ETLServiceImpl {
 			beanWriter.write(resultList);
 		}
 
-		uploadFile(s3TransferManager, bucketPath, "rs1", rs1Path);
+		AwsS3Util.uploadFile(s3TransferManager, bucketPath, "rs1", rs1Path);
 
 		Files.delete(Paths.get(rs1Path));
-	}
-
-	public String uploadFile(S3TransferManager transferManager, String bucketName, String key, String filePath) {
-		UploadFileRequest uploadFileRequest = UploadFileRequest.builder()
-				.putObjectRequest(b -> b.bucket(bucketName).key(key))
-				.addTransferListener(LoggingTransferListener.create()).source(Paths.get(filePath)).build();
-
-		FileUpload fileUpload = transferManager.uploadFile(uploadFileRequest);
-
-		CompletedFileUpload uploadResult = fileUpload.completionFuture().join();
-		return uploadResult.response().eTag();
 	}
 
 }
