@@ -41,7 +41,7 @@ public class AwsSecretsManagerApplication implements ApplicationRunner {
 			String message = "Execption occurred at " + SystemProperties.get("PipelineNumber") + "at "
 					+ LocalTime.now(ZoneId.of("UTC")) + "For exception: " + e.getMessage() + "With Cause: "
 					+ e.getCause().toString();
-			AwsSNSUtil.pubTopic(snsClient, message, AppConstants.SNStopicArn);
+			AwsSNSUtil.pubTopic(snsClient, message, AppConstants.SNS_TOPIC_ARN);
 		}
 	}
 
