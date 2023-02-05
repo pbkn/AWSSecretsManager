@@ -49,7 +49,7 @@ public class ETLServiceImpl {
 	}
 
 	private void processPipeline1() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
-		String bucketPath = "poc.rs1/pending";
+		String bucketPath = "s3://poc.rs1/pending/";
 
 		String rs1Path = "./data/rs1/resultView1.csv";
 

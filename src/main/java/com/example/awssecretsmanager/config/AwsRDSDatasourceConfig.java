@@ -22,7 +22,7 @@ public class AwsRDSDatasourceConfig {
 	@Bean
 	DataSource getDataSource(SecretsManagerClient secretsManagerClient, Gson gson, HikariConfig hikariConfig) {
 
-		String secretName = "dev/poc/postgres1";
+		String secretName = "poc/etl/postgres";
 
 		GetSecretValueRequest getSecretValueRequest = GetSecretValueRequest.builder().secretId(secretName).build();
 
