@@ -9,5 +9,5 @@ public class AWSDBSecret {
 
 	private String port;
 
-	private String dbInstanceIdentifier;
+	private String dbname;
 }

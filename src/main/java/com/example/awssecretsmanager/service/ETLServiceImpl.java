@@ -49,11 +49,11 @@ public class ETLServiceImpl {
 	}
 
 	private void processPipeline1() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
-		String bucketPath = "s3://poc.rs1/pending/";
+		String bucketPath = "poc.rs1/pending/";
 
 		String rs1Path = "./data/rs1/resultView1.csv";
 
-		String sqlQuery = "SELECT * FROM poc";
+		String sqlQuery = "SELECT * FROM poc_tbl";
 
 		log.info("DB Connection is established with {}", jdbcTemplate.toString());
 

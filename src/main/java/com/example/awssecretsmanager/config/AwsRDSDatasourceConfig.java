@@ -41,7 +41,7 @@ public class AwsRDSDatasourceConfig {
 		hikariConfig.setDriverClassName("com.amazonaws.secretsmanager.sql.AWSSecretsManagerPostgreSQLDriver");
 		hikariConfig.setUsername(secretName);
 		hikariConfig.setJdbcUrl("jdbc-secretsmanager:postgresql://" + secrets.getHost() + ":" + secrets.getPort() + "/"
-				+ secrets.getDbInstanceIdentifier());
+				+ secrets.getDbname());
 		hikariConfig.setAutoCommit(false);
 		return new HikariDataSource(hikariConfig);
 	}
