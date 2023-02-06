@@ -53,7 +53,7 @@ public class ETLServiceImpl {
 
 		String sqlQuery = "SELECT * FROM poc_tbl";
 
-		jdbcTemplate.setFetchSize(10);
+		jdbcTemplate.setFetchSize(10000);
 		List<ResultView1> resultList = new ArrayList<>();
 
 		jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
