@@ -2,13 +2,11 @@ package com.example.awssecretsmanager.service;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +22,9 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
-import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 @Service
-@Slf4j
 public class ETLServiceImpl {
 
 	@Autowired
@@ -42,30 +38,28 @@ public class ETLServiceImpl {
 
 		switch (pipelineNumber) {
 			case "DataPipeline1" -> processPipeline1();
-			case "DataPipeline2" -> processPipeline1();
+//			case "DataPipeline2" -> processPipeline1();
 
 			default -> throw new IllegalArgumentException("Unexpected value for pipelineNumber:" + pipelineNumber);
 		}
 	}
 
 	private void processPipeline1() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
-		String bucketPath = "poc.rs1/pending/";
+		String bucketName = "poc.rs1";
+
+		String bucketPathKey = "pending/resultView1.csv";
 
 		String rs1Path = "./data/rs1/resultView1.csv";
 
 		String sqlQuery = "SELECT * FROM poc_tbl";
-
-		log.info("DB Connection is established with {}", jdbcTemplate.toString());
 
 		jdbcTemplate.setFetchSize(10);
 		List<ResultView1> resultList = new ArrayList<>();
 
 		jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
 			public void processRow(ResultSet resultSet) throws SQLException {
-				while (resultSet.next()) {
-					resultList.add(ResultView1.builder().id(Long.valueOf(1)).col1(resultSet.getString("col1"))
-							.col2(resultSet.getString("col2")).col3(resultSet.getString("col3")).build());
-				}
+				resultList.add(ResultView1.builder().id(resultSet.getLong("id")).col1(resultSet.getString("col1"))
+						.col2(resultSet.getString("col2")).col3(resultSet.getString("col3")).build());
 			}
 		});
 
@@ -73,20 +67,15 @@ public class ETLServiceImpl {
 			ColumnPositionMappingStrategy<ResultView1> mappingStrategy = new ColumnPositionMappingStrategy<>();
 			mappingStrategy.setType(ResultView1.class);
 
-			Field[] fields = ResultView1.class.getDeclaredFields();
-			String[] columns = Arrays.stream(fields).map(Field::toString).toArray(String[]::new);
-
-			mappingStrategy.setColumnMapping(columns);
-
 			StatefulBeanToCsv<ResultView1> beanWriter = new StatefulBeanToCsvBuilder<ResultView1>(writer)
-					.withMappingStrategy(mappingStrategy).build();
+					.withApplyQuotesToAll(false).withMappingStrategy(mappingStrategy).build();
 
 			beanWriter.write(resultList);
 		}
 
-		AwsS3Util.uploadFile(s3TransferManager, bucketPath, "rs1", rs1Path);
+		AwsS3Util.uploadFile(s3TransferManager, bucketName, bucketPathKey, rs1Path);
 
-		Files.delete(Paths.get(rs1Path));
+		Files.deleteIfExists(Paths.get(rs1Path));
 	}
 
 }
