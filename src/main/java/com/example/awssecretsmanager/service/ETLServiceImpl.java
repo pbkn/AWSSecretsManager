@@ -1,29 +1,32 @@
 package com.example.awssecretsmanager.service;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowCallbackHandler;
+import org.springframework.boot.system.SystemProperties;
 import org.springframework.stereotype.Service;
 
+import com.example.awssecretsmanager.dao.ETLDaoImpl;
 import com.example.awssecretsmanager.dto.AppParameters;
+import com.example.awssecretsmanager.util.AppConstants;
 import com.example.awssecretsmanager.util.AwsS3Util;
-import com.opencsv.CSVWriter;
+import com.example.awssecretsmanager.util.AwsSNSUtil;
 
+import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 @Service
 public class ETLServiceImpl {
 
 	@Autowired
-	JdbcTemplate jdbcTemplate;
+	ETLDaoImpl etlDaoImpl;
 
 	@Autowired
 	S3TransferManager s3TransferManager;
+
+	@Autowired
+	SnsClient snsClient;
 
 	public void executeETL(AppParameters appParameters) throws Exception {
 
@@ -32,24 +35,15 @@ public class ETLServiceImpl {
 		String appTempCsvFilePath = appParameters.getAppTempCsvFilePath();
 		String sqlQuery = appParameters.getSqlQuery();
 
-		jdbcTemplate.setFetchSize(10000);
-
-		try (CSVWriter csvFile = new CSVWriter(new FileWriter(appTempCsvFilePath))) {
-
-			jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
-				public void processRow(ResultSet resultSet) throws SQLException {
-					try {
-						csvFile.writeAll(resultSet, true);
-					} catch (SQLException | IOException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-			csvFile.flushQuietly();
-		}
+		etlDaoImpl.writeCsvFromQuery(sqlQuery, appTempCsvFilePath);
 
 		AwsS3Util.uploadFile(s3TransferManager, bucketName, bucketPathKey, appTempCsvFilePath);
+
+		String message = "Successfully uploaded the extract for " + SystemProperties.get(AppConstants.PIPELINE_KEY)
+				+ " at " + LocalDateTime.now(AppConstants.UTC_ZONE);
+		String subject = "POC-" + SystemProperties.get(AppConstants.PIPELINE_KEY) + " Successful execution "
+				+ LocalDate.now(AppConstants.UTC_ZONE);
+		AwsSNSUtil.pubTopic(snsClient, message, AppConstants.SNS_TOPIC_ARN, subject);
 
 	}
 
