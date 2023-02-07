@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.system.SystemProperties;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import com.example.awssecretsmanager.dao.ETLDaoImpl;
@@ -13,10 +16,12 @@ import com.example.awssecretsmanager.util.AppConstants;
 import com.example.awssecretsmanager.util.AwsS3Util;
 import com.example.awssecretsmanager.util.AwsSNSUtil;
 
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 @Service
+@Slf4j
 public class ETLServiceImpl {
 
 	@Autowired
@@ -28,12 +33,21 @@ public class ETLServiceImpl {
 	@Autowired
 	SnsClient snsClient;
 
-	public void executeETL(AppParameters appParameters) throws Exception {
+	private Integer retryAttempt = 0;
+
+	@Retryable(retryFor = { Exception.class,
+			RuntimeException.class }, maxAttempts = AppConstants.MAX_RETRY_COUNT, backoff = @Backoff(delay = 10000))
+	public void executeETL(AppParameters appParameters) throws Exception, RuntimeException {
 
 		String bucketName = appParameters.getS3BucketName();
 		String bucketPathKey = appParameters.getS3BucketPath();
 		String appTempCsvFilePath = appParameters.getAppTempCsvFilePath();
 		String sqlQuery = appParameters.getSqlQuery();
+
+		if (retryAttempt++ > 0) {
+			log.warn("Retry attempted for data pipeline {} with retry count {}",
+					SystemProperties.get(AppConstants.PIPELINE_KEY), retryAttempt);
+		}
 
 		etlDaoImpl.writeCsvFromQuery(sqlQuery, appTempCsvFilePath);
 
@@ -45,6 +59,17 @@ public class ETLServiceImpl {
 				+ LocalDate.now(AppConstants.UTC_ZONE);
 		AwsSNSUtil.pubTopic(snsClient, message, AppConstants.SNS_TOPIC_ARN, subject);
 
+	}
+
+	@Recover
+	public void recoverExecuteETL(Exception e) {
+		e.printStackTrace();
+		String message = "Max retries exhausted for " + SystemProperties.get(AppConstants.PIPELINE_KEY) + "at "
+				+ LocalDateTime.now(AppConstants.UTC_ZONE) + "For exception: " + e.getMessage() + "With Cause: "
+				+ e.getCause().toString();
+		String subject = "POC-" + SystemProperties.get(AppConstants.PIPELINE_KEY) + " Max retires exhausted "
+				+ LocalDate.now(AppConstants.UTC_ZONE);
+		AwsSNSUtil.pubTopic(snsClient, message, AppConstants.SNS_TOPIC_ARN, subject);
 	}
 
 }

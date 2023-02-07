@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -13,6 +12,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.system.SystemProperties;
+import org.springframework.retry.annotation.EnableRetry;
 
 import com.example.awssecretsmanager.dto.AppParameters;
 import com.example.awssecretsmanager.service.ETLServiceImpl;
@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
 @SpringBootApplication
+@EnableRetry
 @Slf4j
 public class AwsSecretsManagerApplication implements ApplicationRunner {
 

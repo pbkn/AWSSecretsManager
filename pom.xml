@@ -144,6 +144,11 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>ssm</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework.retry/spring-retry -->
+		<dependency>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
