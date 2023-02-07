@@ -2,25 +2,17 @@ package com.example.awssecretsmanager.service;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Service;
 
-import com.example.awssecretsmanager.dto.ResultView1;
+import com.example.awssecretsmanager.dto.AppParameters;
 import com.example.awssecretsmanager.util.AwsS3Util;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
-import com.opencsv.bean.StatefulBeanToCsv;
-import com.opencsv.bean.StatefulBeanToCsvBuilder;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
-import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import com.opencsv.CSVWriter;
 
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
@@ -33,49 +25,32 @@ public class ETLServiceImpl {
 	@Autowired
 	S3TransferManager s3TransferManager;
 
-	public void executeETL(String pipelineNumber)
-			throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
+	public void executeETL(AppParameters appParameters) throws Exception {
 
-		switch (pipelineNumber) {
-			case "DataPipeline1" -> processPipeline1();
-//			case "DataPipeline2" -> processPipeline1();
-
-			default -> throw new IllegalArgumentException("Unexpected value for pipelineNumber:" + pipelineNumber);
-		}
-	}
-
-	private void processPipeline1() throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
-		String bucketName = "poc.rs1";
-
-		String bucketPathKey = "pending/resultView1.csv";
-
-		String rs1Path = "./data/rs1/resultView1.csv";
-
-		String sqlQuery = "SELECT * FROM poc_tbl";
+		String bucketName = appParameters.getS3BucketName();
+		String bucketPathKey = appParameters.getS3BucketPath();
+		String appTempCsvFilePath = appParameters.getAppTempCsvFilePath();
+		String sqlQuery = appParameters.getSqlQuery();
 
 		jdbcTemplate.setFetchSize(10000);
-		List<ResultView1> resultList = new ArrayList<>();
 
-		jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
-			public void processRow(ResultSet resultSet) throws SQLException {
-				resultList.add(ResultView1.builder().id(resultSet.getLong("id")).col1(resultSet.getString("col1"))
-						.col2(resultSet.getString("col2")).col3(resultSet.getString("col3")).build());
-			}
-		});
+		try (CSVWriter csvFile = new CSVWriter(new FileWriter(appTempCsvFilePath))) {
 
-		try (FileWriter writer = new FileWriter(rs1Path)) {
-			ColumnPositionMappingStrategy<ResultView1> mappingStrategy = new ColumnPositionMappingStrategy<>();
-			mappingStrategy.setType(ResultView1.class);
+			jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
+				public void processRow(ResultSet resultSet) throws SQLException {
+					try {
+						csvFile.writeAll(resultSet, true);
+					} catch (SQLException | IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
 
-			StatefulBeanToCsv<ResultView1> beanWriter = new StatefulBeanToCsvBuilder<ResultView1>(writer)
-					.withApplyQuotesToAll(false).withMappingStrategy(mappingStrategy).build();
-
-			beanWriter.write(resultList);
+			csvFile.flushQuietly();
 		}
 
-		AwsS3Util.uploadFile(s3TransferManager, bucketName, bucketPathKey, rs1Path);
+		AwsS3Util.uploadFile(s3TransferManager, bucketName, bucketPathKey, appTempCsvFilePath);
 
-		Files.deleteIfExists(Paths.get(rs1Path));
 	}
 
 }

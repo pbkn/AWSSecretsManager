@@ -6,13 +6,13 @@ import org.springframework.context.annotation.Configuration;
 import com.example.awssecretsmanager.util.AppConstants;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 @Configuration
-public class AwsSNSConfig {
+public class AwsSsmConfig {
 
 	@Bean
-	SnsClient getSnsClient(AwsCredentialsProvider awsCredentials) {
-		return SnsClient.builder().region(AppConstants.AWS_REGION).credentialsProvider(awsCredentials).build();
+	SsmClient getSsmClient(AwsCredentialsProvider awsCredentials) {
+		return SsmClient.builder().region(AppConstants.AWS_REGION).credentialsProvider(awsCredentials).build();
 	}
 }

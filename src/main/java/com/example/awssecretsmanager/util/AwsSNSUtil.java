@@ -1,5 +1,7 @@
 package com.example.awssecretsmanager.util;
 
+import org.springframework.boot.system.SystemProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
@@ -15,7 +17,9 @@ public class AwsSNSUtil {
 
 	public static void pubTopic(SnsClient snsClient, String message, String topicArn) throws SnsException {
 
-		PublishRequest request = PublishRequest.builder().message(message).topicArn(topicArn).build();
+		PublishRequest request = PublishRequest.builder().message(message)
+				.subject("POC-" + SystemProperties.get("PipelineNumber") + " Exception during execution")
+				.topicArn(topicArn).build();
 
 		PublishResponse result = snsClient.publish(request);
 		log.info(result.messageId() + " Message sent. Status is " + result.sdkHttpResponse().statusCode());
