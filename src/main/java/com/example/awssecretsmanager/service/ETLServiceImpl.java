@@ -33,10 +33,10 @@ public class ETLServiceImpl {
 	@Autowired
 	SnsClient snsClient;
 
-	private Integer retryAttempt = 0;
+	private Integer retryAttempt = -1;
 
 	@Retryable(retryFor = { Exception.class,
-			RuntimeException.class }, maxAttempts = AppConstants.MAX_RETRY_COUNT, backoff = @Backoff(delay = 10000))
+			RuntimeException.class }, maxAttempts = 4, backoff = @Backoff(delay = 30000, multiplier = 2, maxDelay = 120000))
 	public void executeETL(AppParameters appParameters) throws Exception, RuntimeException {
 
 		String bucketName = appParameters.getS3BucketName();
@@ -44,7 +44,7 @@ public class ETLServiceImpl {
 		String appTempCsvFilePath = appParameters.getAppTempCsvFilePath();
 		String sqlQuery = appParameters.getSqlQuery();
 
-		if (retryAttempt++ > 0) {
+		if (retryAttempt++ > -1) {
 			log.warn("Retry attempted for data pipeline {} with retry count {}",
 					SystemProperties.get(AppConstants.PIPELINE_KEY), retryAttempt);
 		}
@@ -64,6 +64,7 @@ public class ETLServiceImpl {
 	@Recover
 	public void recoverExecuteETL(Exception e) {
 		e.printStackTrace();
+		log.error(e.getMessage());
 		String message = "Max retries exhausted for " + SystemProperties.get(AppConstants.PIPELINE_KEY) + "at "
 				+ LocalDateTime.now(AppConstants.UTC_ZONE) + "For exception: " + e.getMessage() + "With Cause: "
 				+ e.getCause().toString();
