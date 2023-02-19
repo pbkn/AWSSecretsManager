@@ -10,22 +10,16 @@ public class ResultSetConverter {
 		throw new IllegalStateException("ResultSetConverter class should not be initiated");
 	}
 
-	public static String[] getColumnValues(ResultSet resultSet) throws SQLException {
+	public static String[] getRowValues(ResultSet resultSet, boolean getHeader) throws SQLException {
 		ResultSetMetaData rsmd = resultSet.getMetaData();
 		int numberOfColumns = rsmd.getColumnCount();
 		String[] resultArray = new String[numberOfColumns];
 		for (int i = 1; i <= numberOfColumns; i++) {
-			resultArray[i - 1] = resultSet.getString(i);
-		}
-		return resultArray;
-	}
-
-	public static String[] getColumnHeaders(ResultSet resultSet) throws SQLException {
-		ResultSetMetaData rsmd = resultSet.getMetaData();
-		int numberOfColumns = rsmd.getColumnCount();
-		String[] resultArray = new String[numberOfColumns];
-		for (int i = 1; i <= numberOfColumns; i++) {
-			resultArray[i - 1] = rsmd.getColumnName(i);
+			if (getHeader) {
+				resultArray[i - 1] = rsmd.getColumnName(i);
+			} else {
+				resultArray[i - 1] = resultSet.getString(i);
+			}
 		}
 		return resultArray;
 	}

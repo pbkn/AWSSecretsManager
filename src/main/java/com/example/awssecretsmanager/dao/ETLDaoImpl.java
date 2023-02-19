@@ -35,8 +35,8 @@ public class ETLDaoImpl {
 			jdbcTemplate.query(sqlQuery, new RowCallbackHandler() {
 				public void processRow(ResultSet resultSet) throws SQLException {
 					if (resultSet.isFirst())
-						csvFile.writeNext(ResultSetConverter.getColumnHeaders(resultSet), false);
-					csvFile.writeNext(ResultSetConverter.getColumnValues(resultSet), false);
+						csvFile.writeNext(ResultSetConverter.getRowValues(resultSet, true), false);
+					csvFile.writeNext(ResultSetConverter.getRowValues(resultSet, false), false);
 				}
 
 			});
